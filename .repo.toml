@@ -1,10 +1,8 @@
 # .repo.toml
 
-# TODO: mirrors later
-
 [about]
-description = "A template repo that checks all of the github community standards boxes and then some"
-topics = ["github", "template", "compliance", "github-repository", "template-repository", "template-generic-repo"]
+description = "Install software from the Free Law Project with brew/homebrew"
+# topics = []
 license = "GPL-2.0-only"
 
 [urls]
