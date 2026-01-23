@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Repository Purpose
 
-This is a GitHub repository template that implements best practices for open source projects. It's designed to be cloned and customized for new repositories. The template includes GitHub community standards compliance, automated workflows, and a command-line driven development process.
+This is a Homebrew tap that provides formulas for installing Free Law Project software. Currently includes:
+
+- **x-ray** - A Python CLI tool for detecting bad redactions in PDF documents (finds text underneath black rectangles that don't actually obscure content)
 
 ## Development Workflow
 
@@ -18,86 +20,99 @@ This repo uses `just` (command runner) for all development tasks. The workflow i
 4. `just merge` - Squash merge PR, delete branch, return to main, and pull latest
 5. `just sync` - Return to main branch and pull latest (escape hatch)
 
+### Homebrew formula testing
+
+- `just test-x-ray` - Install x-ray formula from source, run brew tests, audit, and style checks
+- `just uninstall-x-ray` - Uninstall the x-ray formula
+- `just update-x-ray-resources` - Update Python resource dependencies for the x-ray formula using `brew update-python-resources`
+
 ### Additional commands
 
 - `just` or `just list` - Show all available recipes
 - `just prweb` - Open current PR in browser
 - `just release <version>` - Create a GitHub release with auto-generated notes
-- `just clean_readme` - Generate a clean README from template (strips template documentation)
 - `just compliance_check` - Run custom repo compliance checks
 - `just shellcheck` - Run shellcheck on all bash scripts in just recipes
-- `just utcdate` - Print UTC date in ISO format (used in branch names)
+- `just cue-verify` - Validate `.repo.toml` structure and flag configuration against CUE schema
 
-## Architecture
+## Homebrew Formula Architecture
 
-### Modular justfile structure
+### x-ray formula (`Formula/x-ray.rb`)
 
-The main `justfile` imports four modules:
+The x-ray formula is a Python-based Homebrew formula that:
 
-- `.just/compliance.just` - Custom compliance checks for repo health (validates all GitHub community standards)
-- `.just/gh-process.just` - Git/GitHub workflow automation (core PR lifecycle)
-- `.just/pr-hook.just` - Optional pre-PR hooks for project-specific automation (e.g., Hugo rebuilds)
+- Depends on `python@3.14` and `pymupdf` (PyMuPDF for PDF processing)
+- Uses Homebrew's `virtualenv_create` to create an isolated Python environment
+- Installs Python dependencies as `resource` blocks (certifi, charset-normalizer, idna, requests, urllib3)
+- Creates a wrapper script at `bin/x-ray` that:
+  - Points to the virtualenv's `xray` executable
+  - Sets `PYTHONPATH` to include Homebrew's PyMuPDF installation
+  - Allows the tool to use Homebrew's pre-built PyMuPDF instead of building from source
+
+### Key formula concepts
+
+- **Resources** - Python package dependencies are declared as `resource` blocks with URLs and SHA256 hashes
+- **Virtualenv** - The formula creates an isolated Python environment to avoid conflicts
+- **write_env_script** - Creates a wrapper that sets environment variables before running the tool
+- **test block** - Verifies the installation by checking the executable exists and can import modules
+
+## Testing Formulas Locally
+
+The `just test-x-ray` recipe:
+
+1. Taps this repository to `$(brew --repository)/Library/Taps/chicks-net/homebrew-freelawproject`
+2. Copies `Formula/x-ray.rb` to the tap directory (overwrites if different)
+3. Runs `brew install x-ray` to install from source
+4. Verifies the executable exists at `$(brew --prefix)/bin/x-ray`
+5. Runs `brew test x-ray` to execute the formula's test block
+6. Runs `brew audit --strict x-ray` to check for formula issues
+7. Runs `brew style x-ray` to check Ruby style compliance
+
+## Repository Configuration
+
+### .repo.toml structure
+
+The `.repo.toml` file configures repository metadata and feature flags:
+
+- `[about]` - Description and license
+- `[urls]` - Git SSH and web URLs (currently points to template-repo, should be updated)
+- `[flags]` - Feature flags for AI integrations (claude, claude-review, copilot-review)
+
+### CUE validation
+
+The `just cue-verify` recipe validates `.repo.toml` in two stages:
+
+1. **Structure validation** - Uses CUE schema in `docs/repo-toml.cue` to validate TOML structure and types
+2. **Flag verification** - Checks that enabled feature flags match actual repository configuration:
+   - If `claude` flag is true, requires `.github/workflows/claude.yml` and `claude-code-review.yml`
+   - If `claude-review` flag is true, requires `claude-code-review.yml` and `.just/gh-process.just`
+   - If `copilot-review` flag is true, verifies org has GitHub Copilot via API
+
+## Modular justfile Structure
+
+The main `justfile` imports five modules:
+
+- `.just/compliance.just` - Custom compliance checks for GitHub community standards
+- `.just/gh-process.just` - Git/GitHub workflow automation (PR lifecycle)
+- `.just/pr-hook.just` - Optional pre-PR hooks for project-specific automation
 - `.just/shellcheck.just` - Shellcheck linting for bash scripts in just recipes
+- `.just/cue-verify.just` - CUE validation for `.repo.toml`
 
-### Git/GitHub workflow details
+## GitHub Actions
 
-The `.just/gh-process.just` module implements the entire PR lifecycle:
-
-- **Branch creation** - Dated branches with `$USER/YYYY-MM-DD-<name>` format
-- **PR creation** - First commit message becomes PR title, all commits listed in body
-- **Sanity checks** - Prevents empty PRs, enforces branch strategy via hidden recipes (`_on_a_branch`, `_has_commits`, `_main_branch`)
-- **AI integration** - After PR checks complete, displays GitHub Copilot and Claude Code review comments in terminal
-- **Merge automation** - Squash merge, delete remote branch, return to main, pull latest
-
-### Shellcheck integration
-
-The `.just/shellcheck.just` module extracts and validates bash scripts:
-
-- **Script extraction** - Uses awk to identify recipes with bash shebangs (`#!/usr/bin/env bash` or `#!/bin/bash`)
-- **Automatic detection** - Scans all justfiles in repo (main `justfile` and `.just/*.just`)
-- **Temporary file handling** - Creates temporary files for each script and runs shellcheck with `-x -s bash` flags
-- **Detailed reporting** - Shows which file and recipe each issue is in, with colored output
-- **Exit code** - Returns 1 if issues found, 0 if all scripts pass
-
-### GitHub Actions
-
-Six workflows run on PRs and pushes to main:
+Five workflows run on PRs and pushes to main:
 
 - **markdownlint** - Enforces markdown standards using `markdownlint-cli2`
-- **checkov** - Security scanning for GitHub Actions (continues on error, outputs SARIF)
+- **checkov** - Security scanning for GitHub Actions workflows
 - **actionlint** - Lints GitHub Actions workflow files
 - **auto-assign** - Automatically assigns issues/PRs to `chicks-net`
-- **claude-code-review** - Claude AI review automation
-- **claude** - Additional Claude integration
+- **cue-verify** - Validates `.repo.toml` structure and flags
 
-### Markdown linting
+## Important Implementation Notes
 
-Configuration in `.markdownlint.yml`:
-
-- MD013 (line length) is disabled
-- MD041 (first line h1) is disabled
-- MD042 (no empty links) is disabled
-- MD004 (list style) enforces dashes
-- MD010 (tabs) ignores code blocks
-
-Run locally: `markdownlint-cli2 **/*.md`
-
-## Template customization
-
-When using this template for a new project, search and replace:
-
-- `fini-net` → your GitHub org
-- `template-repo` → your repo name
-- `chicks-net` → your references (especially in `.github/workflows/auto-assign.yml`)
-
-Run `just clean_readme` to strip template documentation from README.
-
-## Important implementation notes
-
+- The x-ray formula uses `write_env_script` to create a wrapper that sets `PYTHONPATH` to include Homebrew's PyMuPDF installation
+- Python resources must be updated manually using `just update-x-ray-resources` when dependencies change
+- The formula depends on `python@3.14` specifically (not just any Python 3)
+- The test recipe copies the formula to the tap directory before installing to test from the working copy
 - All git commands in `.just/gh-process.just` use standard git (no aliases required)
-- The `pr` recipe runs optional pre-PR hooks if `.just/pr-hook.just` exists
 - PR checks poll every 5 seconds for faster feedback
-- Release notes for workflow changes are tracked in `.just/RELEASE_NOTES.md`
-- The `.just` directory contains modular just recipes that can be copied to other projects for updates
-- just catches errors from commands when the recipe isn't a "#!" form that runs another scripting engine
-- just colors come from built-in constants <https://just.systems/man/en/constants.html>
