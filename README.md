@@ -7,6 +7,10 @@
 
 Install software from the Free Law Project with brew/homebrew
 
+## Status
+
+Under development -- this should get forked into FLP's org if deemed worthy.
+
 ## Installation
 
 First, tap this repository:
@@ -45,9 +49,6 @@ x-ray path/to/document.pdf
 
 # Check a PDF from a URL
 x-ray https://example.com/document.pdf
-
-# Show help
-x-ray --help
 ```
 
 **Requirements:**
