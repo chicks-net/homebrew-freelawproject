@@ -20,12 +20,16 @@ test-x-ray:
 	# Tap this repository if not already tapped
 	brew tap chicks-net/freelawproject 2>/dev/null || true
 
-	# Copy formula to tap directory (or confirm symlink exists)
+	# Copy formula to tap directory (or confirm it exists)
 	TAP_DIR="$(brew --repository)/Library/Taps/chicks-net/homebrew-freelawproject"
 	mkdir -p "$TAP_DIR/Formula"
-	if [ ! -L "$TAP_DIR/Formula/x-ray.rb" ]; then
+	if [ ! -f "$TAP_DIR/Formula/x-ray.rb" ]; then
 		cp Formula/x-ray.rb "$TAP_DIR/Formula/"
+	elif ! cmp -s Formula/x-ray.rb "$TAP_DIR/Formula/x-ray.rb"; then
+		# File exists but differs - overwrite it
+		cp -f Formula/x-ray.rb "$TAP_DIR/Formula/"
 	fi
+	# If file exists and is identical, do nothing (success)
 
 	# Install from source (allow binary wheels for Python packages)
 	brew install x-ray
@@ -34,7 +38,7 @@ test-x-ray:
 	which x-ray
 
 	# Test that the executable wrapper was created
-	test -x /opt/homebrew/bin/x-ray
+	test -x "$(brew --prefix)/bin/x-ray"
 
 	# Run brew tests
 	brew test x-ray

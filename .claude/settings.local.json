@@ -20,7 +20,8 @@
       "WebFetch(domain:docs.brew.sh)",
       "Bash(just test-x-ray:*)",
       "Bash(just uninstall-x-ray:*)",
-      "Bash(x-ray:*)"
+      "Bash(x-ray:*)",
+      "Bash(gh run view:*)"
     ],
     "deny": [],
     "ask": []
