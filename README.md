@@ -7,6 +7,54 @@
 
 Install software from the Free Law Project with brew/homebrew
 
+## Installation
+
+First, tap this repository:
+
+```bash
+brew tap chicks-net/freelawproject
+```
+
+Then install any of the available formulas below.
+
+## Available Formulas
+
+### x-ray
+
+A Python library and CLI tool for finding bad redactions in PDF documents. Detects when PDFs have inadequate redactions (like black rectangles drawn over text) that don't actually obscure the underlying content.
+
+**Features:**
+
+- Locates rectangles in PDF documents
+- Finds text in those locations
+- Analyzes whether rectangles are uniformly colored (indicating poor redactions)
+- Returns JSON output with bounding boxes and underlying text
+- Accepts local files, URLs, or bytes objects
+
+**Installation:**
+
+```bash
+brew install x-ray
+```
+
+**Usage:**
+
+```bash
+# Check a local PDF file
+x-ray path/to/document.pdf
+
+# Check a PDF from a URL
+x-ray https://example.com/document.pdf
+
+# Show help
+x-ray --help
+```
+
+**Requirements:**
+
+- Python 3.10 or later
+- PyMuPDF for PDF processing
+
 ## Contributing
 
 - [Code of Conduct](.github/CODE_OF_CONDUCT.md)

@@ -16,7 +16,11 @@
       "Bash(just claude_review:*)",
       "Bash(cue export:*)",
       "WebFetch(domain:docs.github.com)",
-      "Bash(just cue-verify:*)"
+      "Bash(just cue-verify:*)",
+      "WebFetch(domain:docs.brew.sh)",
+      "Bash(just test-x-ray:*)",
+      "Bash(just uninstall-x-ray:*)",
+      "Bash(x-ray:*)"
     ],
     "deny": [],
     "ask": []
