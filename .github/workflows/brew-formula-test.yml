@@ -1,0 +1,40 @@
+name: Brew Formula
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+# global permissions
+permissions: {}
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        # Windows excluded: Homebrew only supports macOS and Linux
+        os: [ubuntu-latest, macos-latest]
+
+    runs-on: ${{ matrix.os }}
+
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Setup Homebrew (installs on Linux, updates on macOS)
+      - name: Setup Homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+
+      # Install just command runner
+      - name: Install just
+        run: brew install just
+        shell: bash
+
+      # Run the formula tests
+      - name: Test x-ray formula
+        run: just test-x-ray
+        shell: bash
