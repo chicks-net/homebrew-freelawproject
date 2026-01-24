@@ -45,6 +45,38 @@ test-x-ray:
 	brew audit --strict x-ray
 	brew style x-ray
 
+# install x-ray formula from source and test it (fast - skip audit/style)
+[group('brew test')]
+test-x-ray-fast:
+	#!/usr/bin/env bash
+	set -euxo pipefail
+
+	# Tap this repository if not already tapped
+	brew tap chicks-net/freelawproject 2>/dev/null || true
+
+	# Copy formula to tap directory (or confirm it exists)
+	TAP_DIR="$(brew --repository)/Library/Taps/chicks-net/homebrew-freelawproject"
+	mkdir -p "$TAP_DIR/Formula"
+	if [ ! -f "$TAP_DIR/Formula/x-ray.rb" ]; then
+		cp Formula/x-ray.rb "$TAP_DIR/Formula/"
+	elif ! cmp -s Formula/x-ray.rb "$TAP_DIR/Formula/x-ray.rb"; then
+		# File exists but differs - overwrite it
+		cp -f Formula/x-ray.rb "$TAP_DIR/Formula/"
+	fi
+	# If file exists and is identical, do nothing (success)
+
+	# Install from source (allow binary wheels for Python packages)
+	brew install x-ray
+
+	# Verify the tool exists
+	which x-ray
+
+	# Test that the executable wrapper was created
+	test -x "$(brew --prefix)/bin/x-ray"
+
+	# Run brew tests (skip audit and style for speed)
+	brew test x-ray
+
 # uninstall x-ray formula
 [group('brew test')]
 uninstall-x-ray:
