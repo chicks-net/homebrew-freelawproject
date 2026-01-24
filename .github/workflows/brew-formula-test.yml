@@ -29,12 +29,31 @@ jobs:
       - name: Setup Homebrew
         uses: Homebrew/actions/setup-homebrew@master
 
+      # Cache Homebrew packages to speed up subsequent runs
+      - name: Cache Homebrew packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            /home/linuxbrew/.linuxbrew/Cellar
+            /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps
+            ~/Library/Caches/Homebrew
+          key: ${{ runner.os }}-brew-${{ hashFiles('Formula/x-ray.rb') }}
+          restore-keys: |
+            ${{ runner.os }}-brew-
+
       # Install just command runner
       - name: Install just
         run: brew install just
         shell: bash
 
       # Run the formula tests
+      # Ubuntu: Use fast tests (skip audit/style) to reduce runtime
+      # macOS: Use full tests (already fast with native libraries)
       - name: Test x-ray formula
-        run: just test-x-ray
+        run: |
+          if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+            just test-x-ray-fast
+          else
+            just test-x-ray
+          fi
         shell: bash
