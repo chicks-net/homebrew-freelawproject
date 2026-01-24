@@ -9,7 +9,9 @@ Install software from the Free Law Project with brew/homebrew
 
 ## Status
 
-Under development -- this should get forked into FLP's org if deemed worthy.
+Please test it out -- feedback is welcomed.
+
+Hopefully this will eventually [get moved into Free Law Project's github org](docs/migration_todos.md).
 
 ## Installation
 
