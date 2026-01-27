@@ -5,7 +5,7 @@
 ![GitHub License](https://img.shields.io/github/license/chicks-net/homebrew-freelawproject)
 ![GitHub watchers](https://img.shields.io/github/watchers/chicks-net/homebrew-freelawproject)
 
-Install software from the Free Law Project with brew/homebrew
+Install [software from the Free Law Project](https://github.com/freelawproject) with brew/homebrew
 
 ## Status
 
