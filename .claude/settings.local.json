@@ -22,7 +22,8 @@
       "Bash(just uninstall-x-ray:*)",
       "Bash(x-ray:*)",
       "Bash(gh run view:*)",
-      "Bash(gh issue create:*)"
+      "Bash(gh issue create:*)",
+      "Bash(gh issue list:*)"
     ],
     "deny": [],
     "ask": []
