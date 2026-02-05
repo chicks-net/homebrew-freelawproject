@@ -28,7 +28,8 @@
       "Bash(brew bump-formula-pr:*)",
       "Bash(gh repo view:*)",
       "Bash(gh workflow list:*)",
-      "Bash(shellcheck:*)"
+      "Bash(shellcheck:*)",
+      "Bash(gh run list:*)"
     ],
     "deny": [],
     "ask": []
