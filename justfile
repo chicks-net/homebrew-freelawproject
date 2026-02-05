@@ -93,3 +93,41 @@ update-x-ray-resources:
 	echo "Updating Python resources for x-ray formula..."
 	brew update-python-resources Formula/x-ray.rb
 	echo "{{GREEN}}Resources updated! Review Formula/x-ray.rb for changes{{NORMAL}}"
+
+# update x-ray formula to latest version
+[group('brew maintenance')]
+autoupdate-x-ray:
+	#!/usr/bin/env bash
+	set -euxo pipefail
+
+	# Make script executable if not already
+	chmod +x scripts/update-x-ray.sh
+
+	# Run the update script (no args = latest version)
+	./scripts/update-x-ray.sh
+
+	echo ""
+	echo "{{GREEN}}Update complete!{{NORMAL}}"
+	echo "Next steps:"
+	echo "  1. Review changes: git diff Formula/x-ray.rb"
+	echo "  2. Test formula: just test-x-ray"
+	echo "  3. Create PR: just branch update-x-ray && git add Formula/x-ray.rb && git commit && just pr"
+
+# update x-ray formula to specific version
+[group('brew maintenance')]
+update-x-ray-to version:
+	#!/usr/bin/env bash
+	set -euxo pipefail
+
+	# Make script executable if not already
+	chmod +x scripts/update-x-ray.sh
+
+	# Run the update script with specified version
+	./scripts/update-x-ray.sh "{{ version }}"
+
+	echo ""
+	echo "{{GREEN}}Update complete!{{NORMAL}}"
+	echo "Next steps:"
+	echo "  1. Review changes: git diff Formula/x-ray.rb"
+	echo "  2. Test formula: just test-x-ray"
+	echo "  3. Create PR: just branch update-x-ray && git add Formula/x-ray.rb && git commit && just pr"

@@ -58,6 +58,44 @@ x-ray https://example.com/document.pdf
 - Python 3.10 or later
 - PyMuPDF for PDF processing
 
+## Automated Updates
+
+The x-ray formula is automatically updated when new versions are released upstream by the Free Law Project. Here's how it works:
+
+**Automatic Detection:**
+
+- A GitHub Actions workflow runs twice daily (6 AM and 6 PM UTC)
+- The workflow checks for new releases via the GitHub API
+- When a new version is detected, it automatically creates a pull request
+
+**Review and Merge:**
+
+- The automation creates a PR with updated formula, SHA256 hash, and Python dependencies
+- All existing tests run automatically on the PR
+- A maintainer reviews and merges the PR manually (no auto-merge)
+
+**Manual Updates:**
+
+If you need to update the formula manually or test a specific version:
+
+```bash
+# Update to the latest version
+just autoupdate-x-ray
+
+# Update to a specific version
+just update-x-ray-to 0.3.6
+```
+
+After running either command:
+
+1. Review the changes: `git diff Formula/x-ray.rb`
+2. Test the formula: `just test-x-ray`
+3. Create a PR: `just branch update-x-ray && git add Formula/x-ray.rb && git commit && just pr`
+
+**Troubleshooting:**
+
+If the automation fails, it will create a GitHub issue with error details and recovery steps. You can always fall back to manual updates using the commands above.
+
 ## Contributing
 
 - [Code of Conduct](.github/CODE_OF_CONDUCT.md)
