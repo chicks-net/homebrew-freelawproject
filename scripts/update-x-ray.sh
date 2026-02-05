@@ -127,11 +127,11 @@ update_formula() {
     # Create backup
     cp "$FORMULA_FILE" "${FORMULA_FILE}.backup"
 
-    # Update version in URL
-    sed -i.tmp "s|url \"https://github.com/freelawproject/x-ray/archive/refs/tags/v[0-9]\+\.[0-9]\+\.[0-9]\+\.tar\.gz\"|url \"https://github.com/freelawproject/x-ray/archive/refs/tags/v${new_version}.tar.gz\"|" "$FORMULA_FILE"
+    # Update version in URL (using -E for portable extended regex)
+    sed -E -i.tmp "s|url \"https://github.com/freelawproject/x-ray/archive/refs/tags/v[0-9]+\.[0-9]+\.[0-9]+\.tar\.gz\"|url \"https://github.com/freelawproject/x-ray/archive/refs/tags/v${new_version}.tar.gz\"|" "$FORMULA_FILE"
 
-    # Update SHA256
-    sed -i.tmp "s|sha256 \"[a-f0-9]\{64\}\"|sha256 \"${new_sha256}\"|" "$FORMULA_FILE"
+    # Update SHA256 (only the tarball sha256, not resource sha256s)
+    sed -E -i.tmp "/url \"https:\/\/github\.com\/freelawproject\/x-ray\/archive\/refs\/tags\/v[0-9]+\.[0-9]+\.[0-9]+\.tar\.gz\"/,+1 s/sha256 \"[a-f0-9]{64}\"/sha256 \"${new_sha256}\"/" "$FORMULA_FILE"
 
     # Remove temporary file created by sed
     rm -f "${FORMULA_FILE}.tmp"

@@ -81,6 +81,7 @@ jobs:
         if: steps.check.outputs.needed == 'true'
         id: tarball
         run: |
+          set -euo pipefail
           version="${{ steps.latest.outputs.version }}"
           url="https://github.com/freelawproject/x-ray/archive/refs/tags/v${version}.tar.gz"
           echo "Downloading: $url"
@@ -95,11 +96,11 @@ jobs:
           version="${{ steps.latest.outputs.version }}"
           sha256="${{ steps.tarball.outputs.sha256 }}"
 
-          # Update version in URL
-          sed -i "s|url \"https://github.com/freelawproject/x-ray/archive/refs/tags/v[0-9]\+\.[0-9]\+\.[0-9]\+\.tar\.gz\"|url \"https://github.com/freelawproject/x-ray/archive/refs/tags/v${version}.tar.gz\"|" Formula/x-ray.rb
+          # Update version in URL (using -E for portable extended regex)
+          sed -E -i "s|url \"https://github.com/freelawproject/x-ray/archive/refs/tags/v[0-9]+\.[0-9]+\.[0-9]+\.tar\.gz\"|url \"https://github.com/freelawproject/x-ray/archive/refs/tags/v${version}.tar.gz\"|" Formula/x-ray.rb
 
-          # Update SHA256
-          sed -i "s|sha256 \"[a-f0-9]\{64\}\"|sha256 \"${sha256}\"|" Formula/x-ray.rb
+          # Update SHA256 (only the tarball sha256, not resource sha256s)
+          sed -E -i "/url \"https:\/\/github\.com\/freelawproject\/x-ray\/archive\/refs\/tags\/v[0-9]+\.[0-9]+\.[0-9]+\.tar\.gz\"/,+1 s/sha256 \"[a-f0-9]{64}\"/sha256 \"${sha256}\"/" Formula/x-ray.rb
 
           echo "Formula file updated"
 
