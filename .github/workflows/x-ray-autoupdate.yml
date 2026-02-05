@@ -6,6 +6,7 @@ on:
     # Run twice daily at 6 AM and 6 PM UTC
     - cron: '0 6,18 * * *'
   workflow_dispatch:
+    # checkov:skip=CKV_GHA_7:Manual version forcing is an intentional feature
     inputs:
       force_version:
         description: 'Force update to specific version (e.g., 0.3.6)'
@@ -197,18 +198,20 @@ jobs:
           target="${{ steps.latest.outputs.version }}"
           needed="${{ steps.check.outputs.needed }}"
 
-          echo "# X-Ray Auto-Update Summary" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Current version**: v${current}" >> "$GITHUB_STEP_SUMMARY"
-          echo "- **Latest version**: v${target}" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "# X-Ray Auto-Update Summary"
+            echo ""
+            echo "- **Current version**: v${current}"
+            echo "- **Latest version**: v${target}"
 
-          if [ "$needed" = "true" ]; then
-            pr_url="${{ steps.pr.outputs.pr_url }}"
-            echo "- **Status**: ✅ Update available" >> "$GITHUB_STEP_SUMMARY"
-            echo "- **Pull request**: ${pr_url}" >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "- **Status**: ✅ Up to date" >> "$GITHUB_STEP_SUMMARY"
-          fi
+            if [ "$needed" = "true" ]; then
+              pr_url="${{ steps.pr.outputs.pr_url }}"
+              echo "- **Status**: ✅ Update available"
+              echo "- **Pull request**: ${pr_url}"
+            else
+              echo "- **Status**: ✅ Up to date"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create failure issue
         if: failure() && steps.check.outputs.needed == 'true'
