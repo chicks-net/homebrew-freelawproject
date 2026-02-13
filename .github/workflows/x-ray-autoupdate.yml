@@ -1,0 +1,259 @@
+---
+name: X-Ray Auto-Update
+
+on:
+  schedule:
+    # Run twice daily at 6 AM and 6 PM UTC
+    - cron: '0 6,18 * * *'
+  workflow_dispatch:
+    # checkov:skip=CKV_GHA_7:Manual version forcing is an intentional feature
+    inputs:
+      force_version:
+        description: 'Force update to specific version (e.g., 0.3.6)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  check-and-update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Homebrew
+        uses: Homebrew/actions/setup-homebrew@master
+
+      - name: Install dependencies
+        run: |
+          brew install just
+          brew install python@3.14
+
+      - name: Configure git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Get current version
+        id: current
+        run: |
+          current_version=$(grep -E '^\s+url\s+"https://github.com/freelawproject/x-ray/archive/refs/tags/v' Formula/x-ray.rb | \
+                           sed -E 's/.*\/v([0-9]+\.[0-9]+\.[0-9]+)\.tar\.gz".*/\1/')
+          echo "version=$current_version" >> "$GITHUB_OUTPUT"
+          echo "Current version: $current_version"
+
+      - name: Get latest version
+        id: latest
+        run: |
+          if [ -n "${{ github.event.inputs.force_version }}" ]; then
+            target_version="${{ github.event.inputs.force_version }}"
+            target_version="${target_version#v}"
+            echo "Using forced version: $target_version"
+          else
+            response=$(curl -s -H "Accept: application/vnd.github.v3+json" \
+                            "https://api.github.com/repos/freelawproject/x-ray/releases/latest")
+            target_version=$(echo "$response" | jq -r '.tag_name' | sed 's/^v//')
+            echo "Latest version from GitHub: $target_version"
+          fi
+          echo "version=$target_version" >> "$GITHUB_OUTPUT"
+
+      - name: Check if update needed
+        id: check
+        run: |
+          current="${{ steps.current.outputs.version }}"
+          target="${{ steps.latest.outputs.version }}"
+
+          if [ "$current" = "$target" ]; then
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+            echo "Formula is already at version $current"
+          else
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+            echo "Update needed: $current -> $target"
+          fi
+
+      - name: Download tarball and calculate SHA256
+        if: steps.check.outputs.needed == 'true'
+        id: tarball
+        run: |
+          set -euo pipefail
+          version="${{ steps.latest.outputs.version }}"
+          url="https://github.com/freelawproject/x-ray/archive/refs/tags/v${version}.tar.gz"
+          echo "Downloading: $url"
+
+          sha256=$(curl -sL "$url" | shasum -a 256 | cut -d' ' -f1)
+          echo "SHA256: $sha256"
+          echo "sha256=$sha256" >> "$GITHUB_OUTPUT"
+
+      - name: Update formula file
+        if: steps.check.outputs.needed == 'true'
+        run: |
+          version="${{ steps.latest.outputs.version }}"
+          sha256="${{ steps.tarball.outputs.sha256 }}"
+
+          # Update version in URL (using -E for portable extended regex)
+          sed -E -i "s|url \"https://github.com/freelawproject/x-ray/archive/refs/tags/v[0-9]+\.[0-9]+\.[0-9]+\.tar\.gz\"|url \"https://github.com/freelawproject/x-ray/archive/refs/tags/v${version}.tar.gz\"|" Formula/x-ray.rb
+
+          # Update SHA256 (only the tarball sha256, not resource sha256s)
+          sed -E -i "/url \"https:\/\/github\.com\/freelawproject\/x-ray\/archive\/refs\/tags\/v[0-9]+\.[0-9]+\.[0-9]+\.tar\.gz\"/,+1 s/sha256 \"[a-f0-9]{64}\"/sha256 \"${sha256}\"/" Formula/x-ray.rb
+
+          echo "Formula file updated"
+
+      - name: Update Python resources
+        if: steps.check.outputs.needed == 'true'
+        run: |
+          echo "Updating Python resources..."
+          brew update-python-resources Formula/x-ray.rb || true
+
+      - name: Show changes
+        if: steps.check.outputs.needed == 'true'
+        run: |
+          echo "Changes to formula:"
+          git diff Formula/x-ray.rb
+
+      - name: Create branch and commit
+        if: steps.check.outputs.needed == 'true'
+        id: commit
+        run: |
+          version="${{ steps.latest.outputs.version }}"
+          branch_name="github-actions/$(date +%Y-%m-%d)-update-x-ray-v${version}"
+
+          git checkout -b "$branch_name"
+          git add Formula/x-ray.rb
+          git commit -m "⬆️ Update x-ray to v${version}"
+
+          echo "branch=$branch_name" >> "$GITHUB_OUTPUT"
+
+      - name: Push branch
+        if: steps.check.outputs.needed == 'true'
+        run: |
+          git push origin "${{ steps.commit.outputs.branch }}"
+
+      - name: Create pull request
+        if: steps.check.outputs.needed == 'true'
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${{ steps.latest.outputs.version }}"
+          sha256="${{ steps.tarball.outputs.sha256 }}"
+          branch="${{ steps.commit.outputs.branch }}"
+
+          # Create PR body
+          cat > pr_body.md <<'EOF'
+          ## Done
+
+          - ⬆️ Update x-ray to v$VERSION
+
+          ## Changes
+
+          - **Version**: v$VERSION
+          - **SHA256**: `$SHA256`
+          - **Python resources**: Updated automatically via `brew update-python-resources`
+
+          ## Verification
+
+          - [ ] Formula installs successfully
+          - [ ] Tests pass (`brew test x-ray`)
+          - [ ] Audit passes (`brew audit --strict x-ray`)
+          - [ ] Style check passes (`brew style x-ray`)
+
+          ## Upstream Release
+
+          https://github.com/freelawproject/x-ray/releases/tag/v$VERSION
+
+          ## Meta
+
+          This PR was created automatically by the [X-Ray Auto-Update workflow]($WORKFLOW_URL).
+
+          The workflow detected a new release of x-ray and updated the formula accordingly.
+          Please review the changes and merge if all tests pass.
+          EOF
+
+          # Replace placeholders
+          sed -i "s/\$VERSION/$version/g" pr_body.md
+          sed -i "s/\$SHA256/$sha256/g" pr_body.md
+          sed -i "s|\$WORKFLOW_URL|https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}|g" pr_body.md
+
+          # Create PR
+          pr_url=$(gh pr create \
+            --title "⬆️ Update x-ray to v${version}" \
+            --body-file pr_body.md \
+            --base main \
+            --head "$branch" \
+            --label "automated" \
+            --label "dependencies")
+
+          echo "pr_url=$pr_url" >> "$GITHUB_OUTPUT"
+          echo "Pull request created: $pr_url"
+
+      - name: Add workflow summary
+        if: always()
+        run: |
+          current="${{ steps.current.outputs.version }}"
+          target="${{ steps.latest.outputs.version }}"
+          needed="${{ steps.check.outputs.needed }}"
+
+          {
+            echo "# X-Ray Auto-Update Summary"
+            echo ""
+            echo "- **Current version**: v${current}"
+            echo "- **Latest version**: v${target}"
+
+            if [ "$needed" = "true" ]; then
+              pr_url="${{ steps.pr.outputs.pr_url }}"
+              echo "- **Status**: ✅ Update available"
+              echo "- **Pull request**: ${pr_url}"
+            else
+              echo "- **Status**: ✅ Up to date"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Create failure issue
+        if: failure() && steps.check.outputs.needed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${{ steps.latest.outputs.version }}"
+
+          cat > issue_body.md <<'EOF'
+          The X-Ray Auto-Update workflow failed while trying to update the formula to v$VERSION.
+
+          ## Workflow Details
+
+          - **Workflow run**: https://github.com/$REPO/actions/runs/$RUN_ID
+          - **Target version**: v$VERSION
+          - **Current version**: v$CURRENT_VERSION
+
+          ## Manual Recovery
+
+          You can manually update the formula using:
+
+          ```bash
+          just update-x-ray-to $VERSION
+          ```
+
+          Or investigate the failure and retry the workflow.
+
+          ## Logs
+
+          Check the [workflow logs](https://github.com/$REPO/actions/runs/$RUN_ID) for details.
+          EOF
+
+          # Replace placeholders
+          sed -i "s/\$VERSION/$version/g" issue_body.md
+          sed -i "s/\$CURRENT_VERSION/${{ steps.current.outputs.version }}/g" issue_body.md
+          sed -i "s|\$REPO|${{ github.repository }}|g" issue_body.md
+          sed -i "s|\$RUN_ID|${{ github.run_id }}|g" issue_body.md
+
+          # Create issue
+          gh issue create \
+            --title "🚨 X-Ray auto-update failed for v${version}" \
+            --body-file issue_body.md \
+            --label "automated" \
+            --label "bug"
