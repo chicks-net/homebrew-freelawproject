@@ -31,7 +31,7 @@ jobs:
 
       # Cache Homebrew packages to speed up subsequent runs
       - name: Cache Homebrew packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             /home/linuxbrew/.linuxbrew/Cellar
