@@ -1,7 +1,7 @@
 # .repo.toml
 
 [about]
-description = "Install software from the Free Law Project with brew/homebrew"
+description = "Automated GitHub workflow template: community standards, just recipes for PR lifecycle, AI reviews (Copilot/Claude),   and template sync system"
 # topics = []
 license = "GPL-2.0-only"
 
