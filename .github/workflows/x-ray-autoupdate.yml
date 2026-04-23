@@ -28,7 +28,7 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Homebrew
-        uses: Homebrew/actions/setup-homebrew@master
+        uses: Homebrew/actions/setup-homebrew@main
 
       - name: Install dependencies
         run: |
@@ -56,9 +56,14 @@ jobs:
             target_version="${target_version#v}"
             echo "Using forced version: $target_version"
           else
-            response=$(curl -s -H "Accept: application/vnd.github.v3+json" \
+            response=$(curl -s -H "Authorization: token ${{ github.token }}" \
+                             -H "Accept: application/vnd.github.v3+json" \
                             "https://api.github.com/repos/freelawproject/x-ray/releases/latest")
             target_version=$(echo "$response" | jq -r '.tag_name' | sed 's/^v//')
+            if [ -z "$target_version" ] || [ "$target_version" = "null" ]; then
+              echo "Could not determine latest version"
+              exit 1
+            fi
             echo "Latest version from GitHub: $target_version"
           fi
           echo "version=$target_version" >> "$GITHUB_OUTPUT"
@@ -108,7 +113,11 @@ jobs:
         if: steps.check.outputs.needed == 'true'
         run: |
           echo "Updating Python resources..."
-          brew update-python-resources Formula/x-ray.rb || true
+          tap_dir="$(brew --repository)/Library/Taps/chicks-net/homebrew-freelawproject"
+          mkdir -p "$tap_dir/Formula"
+          cp Formula/x-ray.rb "$tap_dir/Formula/x-ray.rb"
+          brew update-python-resources "$tap_dir/Formula/x-ray.rb"
+          cp "$tap_dir/Formula/x-ray.rb" Formula/x-ray.rb
 
       - name: Show changes
         if: steps.check.outputs.needed == 'true'
@@ -132,6 +141,7 @@ jobs:
       - name: Push branch
         if: steps.check.outputs.needed == 'true'
         run: |
+          git remote set-url origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git"
           git push origin "${{ steps.commit.outputs.branch }}"
 
       - name: Create pull request
