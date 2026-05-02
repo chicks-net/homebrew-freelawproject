@@ -1,5 +1,6 @@
 # homebrew-freelawproject
 
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/chicks-net/homebrew-freelawproject/badge)](https://scorecard.dev/viewer/?uri=github.com/chicks-net/homebrew-freelawproject)
 ![GitHub Issues](https://img.shields.io/github/issues/chicks-net/homebrew-freelawproject)
 ![GitHub Pull Requests](https://img.shields.io/github/issues-pr/chicks-net/homebrew-freelawproject)
 ![GitHub License](https://img.shields.io/github/license/chicks-net/homebrew-freelawproject)
