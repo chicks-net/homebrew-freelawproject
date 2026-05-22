@@ -34,7 +34,6 @@ jobs:
         uses: actions/cache@v5
         with:
           path: |
-            /home/linuxbrew/.linuxbrew/Cellar
             /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps
             ~/Library/Caches/Homebrew
           key: ${{ runner.os }}-brew-${{ hashFiles('Formula/x-ray.rb') }}
@@ -45,7 +44,6 @@ jobs:
       - name: Install just
         run: |
           brew install just
-          brew link --overwrite just
           echo "$(brew --prefix)/bin" >> "$GITHUB_PATH"
         shell: bash
 
