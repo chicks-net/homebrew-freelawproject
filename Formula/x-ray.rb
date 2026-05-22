@@ -7,8 +7,8 @@ class XRay < Formula
 
   desc "Python library for finding bad redactions in PDF documents"
   homepage "https://github.com/freelawproject/x-ray"
-  url "https://github.com/freelawproject/x-ray/archive/refs/tags/v0.3.5.tar.gz"
-  sha256 "98361d4561e0afa0e142b8709ca4e20302baf2df83a104e45c8f7c467a919983"
+  url "https://github.com/freelawproject/x-ray/archive/refs/tags/v0.3.6.tar.gz"
+  sha256 "95ebcc358f279332ac72991e87eba514926a4b8db45d528fc2c7e59de5e4f452"
   license "BSD-2-Clause"
 
   depends_on "pymupdf"
