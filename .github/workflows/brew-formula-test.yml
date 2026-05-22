@@ -43,7 +43,10 @@ jobs:
 
       # Install just command runner
       - name: Install just
-        run: brew install just; brew link --overwrite just
+        run: |
+          brew install just
+          brew link --overwrite just
+          echo "$(brew --prefix)/bin" >> "$GITHUB_PATH"
         shell: bash
 
       # Run the formula tests
