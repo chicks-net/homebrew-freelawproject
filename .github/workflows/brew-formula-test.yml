@@ -43,7 +43,7 @@ jobs:
 
       # Install just command runner
       - name: Install just
-        run: brew install just || brew link just
+        run: brew install just; brew link --overwrite just
         shell: bash
 
       # Run the formula tests
