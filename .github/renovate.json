@@ -1,0 +1,46 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "schedule": ["after 5am on Monday", "after 5am on Tuesday", "after 5am on Wednesday", "after 5am on Thursday", "after 5am on Friday"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": ["^Formula/x-ray\\.rb$"],
+      "matchStrings": [
+        "url \"https:\\/\\/github\\.com\\/freelawproject\\/x-ray\\/archive\\/refs\\/tags\\/v(?<currentValue>\\d+\\.\\d+\\.\\d+)\\.tar\\.gz\"\\n\\s+sha256 \"(?<currentDigest>[a-f0-9]{64})\""
+      ],
+      "depNameTemplate": "freelawproject/x-ray",
+      "datasourceTemplate": "github-releases",
+      "versioningTemplate": "semver"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": false,
+      "minimumReleaseAge": "3 days",
+      "groupName": "GitHub Actions (minor/patch)"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "matchDepNames": ["bridgecrewio/checkov-action"],
+      "overrideDatasource": "git-refs",
+      "overridePackageName": "https://github.com/bridgecrewio/checkov-action"
+    },
+    {
+      "matchDepNames": ["freelawproject/x-ray"],
+      "automerge": false
+    }
+  ],
+  "prConcurrentLimit": 3,
+  "prHourlyLimit": 2,
+  "labels": ["dependencies"]
+}
