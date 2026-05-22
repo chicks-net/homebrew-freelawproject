@@ -27,14 +27,13 @@ jobs:
 
       # Setup Homebrew (installs on Linux, updates on macOS)
       - name: Setup Homebrew
-        uses: Homebrew/actions/setup-homebrew@master
+        uses: Homebrew/actions/setup-homebrew@main
 
       # Cache Homebrew packages to speed up subsequent runs
       - name: Cache Homebrew packages
         uses: actions/cache@v5
         with:
           path: |
-            /home/linuxbrew/.linuxbrew/Cellar
             /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps
             ~/Library/Caches/Homebrew
           key: ${{ runner.os }}-brew-${{ hashFiles('Formula/x-ray.rb') }}
@@ -43,7 +42,9 @@ jobs:
 
       # Install just command runner
       - name: Install just
-        run: brew install just
+        run: |
+          brew install just
+          echo "$(brew --prefix)/bin" >> "$GITHUB_PATH"
         shell: bash
 
       # Run the formula tests
