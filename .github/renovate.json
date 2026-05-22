@@ -13,6 +13,8 @@
       ],
       "depNameTemplate": "freelawproject/x-ray",
       "datasourceTemplate": "github-releases",
+      "extractVersionTemplate": "^v(?<version>.+)$",
+      "autoReplaceStringTemplate": "url \"https://github.com/freelawproject/x-ray/archive/refs/tags/v{{{newValue}}}.tar.gz\"\n  sha256 \"{{{newDigest}}}\"",
       "versioningTemplate": "semver"
     }
   ],

@@ -1,0 +1,58 @@
+name: Renovate Resources
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "Formula/x-ray.rb"
+
+permissions:
+  contents: write
+
+jobs:
+  update-resources:
+    if: startsWith(github.head_ref, 'renovate/')
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Homebrew
+        uses: Homebrew/actions/setup-homebrew@main
+
+      - name: Update Python resources
+        id: resources
+        run: |
+          set -euo pipefail
+
+          tap_dir="$(brew --repository)/Library/Taps/chicks-net/homebrew-freelawproject"
+          mkdir -p "$tap_dir/Formula"
+          cp Formula/x-ray.rb "$tap_dir/Formula/x-ray.rb"
+
+          if brew update-python-resources "$tap_dir/Formula/x-ray.rb"; then
+            cp "$tap_dir/Formula/x-ray.rb" Formula/x-ray.rb
+            echo "updated=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "updated=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::brew update-python-resources failed"
+          fi
+
+      - name: Commit and push
+        if: steps.resources.outputs.updated == 'true'
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet Formula/x-ray.rb; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git add Formula/x-ray.rb
+          git commit -m "chore: update Python resources for Renovate version bump"
+          git push
