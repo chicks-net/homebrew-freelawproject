@@ -27,7 +27,7 @@ jobs:
 
       # Setup Homebrew (installs on Linux, updates on macOS)
       - name: Setup Homebrew
-        uses: Homebrew/actions/setup-homebrew@master
+        uses: Homebrew/actions/setup-homebrew@main
 
       # Cache Homebrew packages to speed up subsequent runs
       - name: Cache Homebrew packages
@@ -43,7 +43,7 @@ jobs:
 
       # Install just command runner
       - name: Install just
-        run: brew install just
+        run: brew install just || brew link just
         shell: bash
 
       # Run the formula tests
