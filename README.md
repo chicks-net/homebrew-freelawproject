@@ -22,6 +22,12 @@ First, tap this repository:
 brew tap chicks-net/freelawproject
 ```
 
+Optionally, trust the tap to skip the confirmation prompt on first install:
+
+```bash
+brew trust chicks-net/freelawproject
+```
+
 Then install any of the available formulas below.
 
 ## Available Formulas
