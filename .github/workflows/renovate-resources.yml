@@ -6,22 +6,23 @@ on:
     paths:
       - "Formula/x-ray.rb"
 
-permissions:
-  contents: write
+permissions: {}
 
 jobs:
   update-resources:
     if: startsWith(github.head_ref, 'renovate/')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Homebrew
-        uses: Homebrew/actions/setup-homebrew@main
+        uses: Homebrew/actions/setup-homebrew@6315ef70a8bfcd2c71104383846591ac113ace33 # main
 
       - name: Update Python resources
         id: resources

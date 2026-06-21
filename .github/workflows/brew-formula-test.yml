@@ -23,15 +23,15 @@ jobs:
       contents: read
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       # Setup Homebrew (installs on Linux, updates on macOS)
       - name: Setup Homebrew
-        uses: Homebrew/actions/setup-homebrew@main
+        uses: Homebrew/actions/setup-homebrew@6315ef70a8bfcd2c71104383846591ac113ace33 # main
 
       # Cache Homebrew packages to speed up subsequent runs
       - name: Cache Homebrew packages
-        uses: actions/cache@v5
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: |
             /home/linuxbrew/.linuxbrew/Homebrew/Library/Taps
