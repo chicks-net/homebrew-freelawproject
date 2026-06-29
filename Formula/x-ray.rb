@@ -46,8 +46,7 @@ class XRay < Formula
     venv.pip_install buildpath
 
     # Create wrapper script named x-ray with PyMuPDF in PYTHONPATH
-    site_packages = Language::Python.site_packages("python3.14")
-    pymupdf_path = Formula["pymupdf"].opt_libexec/site_packages
+    pymupdf_path = formula_opt_libexec("pymupdf")/"site_packages"
     (bin/"x-ray").write_env_script libexec/"bin/xray",
                                    PATH:       "#{libexec}/bin:$PATH",
                                    PYTHONPATH: "#{pymupdf_path}:$PYTHONPATH"
