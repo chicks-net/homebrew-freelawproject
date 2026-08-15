@@ -10,7 +10,7 @@ on:
 permissions: {}
 
 jobs:
-  test:
+  test-x-ray-formula:
     strategy:
       fail-fast: false
       matrix:
