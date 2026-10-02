@@ -1,7 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:recommended",
+    "helpers:pinGitHubActionDigests"
   ],
   "schedule": ["after 5am on Monday", "after 5am on Tuesday", "after 5am on Wednesday", "after 5am on Thursday", "after 5am on Friday"],
   "customManagers": [
@@ -23,19 +24,25 @@
       "matchManagers": ["github-actions"],
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": false,
-      "minimumReleaseAge": "3 days",
+      "minimumReleaseAge": "7 days",
       "groupName": "GitHub Actions (minor/patch)"
     },
     {
       "matchManagers": ["github-actions"],
       "matchUpdateTypes": ["major"],
       "automerge": false,
-      "minimumReleaseAge": "3 days"
+      "minimumReleaseAge": "7 days"
     },
     {
       "matchDepNames": ["bridgecrewio/checkov-action"],
       "overrideDatasource": "git-refs",
       "overridePackageName": "https://github.com/bridgecrewio/checkov-action"
+    },
+    {
+      "matchDepNames": ["Homebrew/actions"],
+      "versioning": "loose",
+      "extractVersion": "^(?<version>\\d+\\.\\d+\\.\\d+)",
+      "description": "Homebrew/actions uses 4-component calver tags (e.g. 2026.08.03.1), but Renovate's pin-comment parser only reads 3 components, so a SHA-pinned ref gets currentValue '2026.08.03'. loose versioning makes that value valid, and extractVersion truncates release tags to the same 3-component form so digest lookups resolve against a real release instead of failing."
     },
     {
       "matchDepNames": ["freelawproject/x-ray"],
