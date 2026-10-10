@@ -17,6 +17,22 @@
       "extractVersionTemplate": "^v(?<version>.+)$",
       "autoReplaceStringTemplate": "url \"https://github.com/freelawproject/x-ray/archive/refs/tags/v{{{newValue}}}.tar.gz\"\n  sha256 \"{{{newDigest}}}\"",
       "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["^\\.github/workflows/actionlint\\.ya?ml$"],
+      "matchStrings": ["ACTIONLINT_VERSION:\\s*(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "rhysd/actionlint",
+      "extractVersionTemplate": "^v(?<version>.*)$",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["^\\.github/workflows/actionlint\\.ya?ml$"],
+      "matchStrings": ["PYFLAKES_VERSION:\\s*(?<currentValue>\\d+\\.\\d+\\.\\d+)"],
+      "datasourceTemplate": "pypi",
+      "depNameTemplate": "pyflakes"
     }
   ],
   "packageRules": [
@@ -47,6 +63,10 @@
     {
       "matchDepNames": ["freelawproject/x-ray"],
       "automerge": false
+    },
+    {
+      "matchDepNames": ["rhysd/actionlint", "pyflakes"],
+      "minimumReleaseAge": "7 days"
     }
   ],
   "prConcurrentLimit": 3,
