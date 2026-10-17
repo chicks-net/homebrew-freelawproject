@@ -50,11 +50,6 @@
       "minimumReleaseAge": "7 days"
     },
     {
-      "matchDepNames": ["bridgecrewio/checkov-action"],
-      "overrideDatasource": "git-refs",
-      "overridePackageName": "https://github.com/bridgecrewio/checkov-action"
-    },
-    {
       "matchDepNames": ["Homebrew/actions"],
       "versioning": "loose",
       "extractVersion": "^(?<version>\\d+\\.\\d+\\.\\d+)",
