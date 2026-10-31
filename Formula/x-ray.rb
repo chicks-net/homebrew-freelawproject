@@ -10,9 +10,11 @@ class XRay < Formula
   url "https://github.com/freelawproject/x-ray/archive/refs/tags/v0.3.6.tar.gz"
   sha256 "95ebcc358f279332ac72991e87eba514926a4b8db45d528fc2c7e59de5e4f452"
   license "BSD-2-Clause"
+  revision 1
 
+  depends_on "mupdf"
   depends_on "pymupdf"
-  depends_on "python@3.14"
+  depends_on "python@3.15"
 
   resource "certifi" do
     url "https://files.pythonhosted.org/packages/b0/ee/9b19140fe824b367c04c5e1b369942dd754c4c5462d5674002f75c4dedc1/certifi-2024.8.30.tar.gz"
@@ -39,24 +41,53 @@ class XRay < Formula
     sha256 "e7d814a81dad81e6caf2ec9fdedb284ecc9c73076b62654547cc64ccdcae26e9"
   end
 
+  # Homebrew's prebuilt pymupdf/mupdf Python bindings are built by
+  # homebrew-core against this Python; the venv below and the PYTHONPATH
+  # paths must move together whenever core migrates pymupdf to a newer
+  # Python (see issue #60 for what happened when this linkage was left
+  # implicit).
+  def pymupdf_python
+    "python3.15"
+  end
+
+  def pymupdf_site_packages
+    %w[mupdf pymupdf].map { |name| formula_opt_prefix(name)/Language::Python.site_packages(pymupdf_python) }
+  end
+
   def install
-    # Link to Homebrew's pymupdf installation
-    venv = virtualenv_create(libexec, "python3.14")
+    venv = virtualenv_create(libexec, pymupdf_python)
     venv.pip_install resources
     venv.pip_install buildpath
 
     # Create wrapper script named x-ray with PyMuPDF in PYTHONPATH
-    pymupdf_path = formula_opt_libexec("pymupdf")/"site_packages"
+    pymupdf_path = pymupdf_site_packages.join(":")
     (bin/"x-ray").write_env_script libexec/"bin/xray",
                                    PATH:       "#{libexec}/bin:$PATH",
-                                   PYTHONPATH: "#{pymupdf_path}:$PYTHONPATH"
+                                   # ${VAR:+:$VAR} appends only when VAR is set; a bare $VAR
+                                   # would leave an empty entry that Python treats as cwd
+                                   PYTHONPATH: "#{pymupdf_path}${PYTHONPATH:+:$PYTHONPATH}"
   end
 
   test do
     # Test that the x-ray command exists
     assert_path_exists bin/"x-ray"
 
+    # Mirror the wrapper's PYTHONPATH so fitz resolves the way it does at
+    # runtime instead of relying on the venv's implicit Homebrew .pth entries
+    ENV["PYTHONPATH"] = [pymupdf_site_packages.join(":"), ENV["PYTHONPATH"]].reject { |p| p.to_s.empty? }.join(":")
+
     # Test Python module can be imported with PyMuPDF support
     system libexec/"bin/python", "-c", "import xray; from fitz import Document"
+
+    # End-to-end: exercise the wrapper itself on a minimal PDF
+    (testpath/"test.pdf").write <<~PDF
+      %PDF-1.4
+      1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj
+      2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj
+      3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]>>endobj
+      trailer<</Root 1 0 R>>
+      %%EOF
+    PDF
+    assert_match "{}", shell_output("#{bin/"x-ray"} #{testpath/"test.pdf"}")
   end
 end

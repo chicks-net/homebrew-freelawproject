@@ -41,12 +41,12 @@ This repo uses `just` (command runner) for all development tasks. The workflow i
 
 The x-ray formula is a Python-based Homebrew formula that:
 
-- Depends on `python@3.14` and `pymupdf` (PyMuPDF for PDF processing)
+- Depends on `python@3.15`, `pymupdf` and `mupdf` (PyMuPDF for PDF processing)
 - Uses Homebrew's `virtualenv_create` to create an isolated Python environment
 - Installs Python dependencies as `resource` blocks (certifi, charset-normalizer, idna, requests, urllib3)
 - Creates a wrapper script at `bin/x-ray` that:
   - Points to the virtualenv's `xray` executable
-  - Sets `PYTHONPATH` to include Homebrew's PyMuPDF installation
+  - Sets `PYTHONPATH` to the prebuilt `pymupdf`/`mupdf` site-packages for the venv's Python (`python3.15`)
   - Allows the tool to use Homebrew's pre-built PyMuPDF instead of building from source
 
 ### Key formula concepts
@@ -54,7 +54,7 @@ The x-ray formula is a Python-based Homebrew formula that:
 - **Resources** - Python package dependencies are declared as `resource` blocks with URLs and SHA256 hashes
 - **Virtualenv** - The formula creates an isolated Python environment to avoid conflicts
 - **write_env_script** - Creates a wrapper that sets environment variables before running the tool
-- **test block** - Verifies the installation by checking the executable exists and can import modules
+- **test block** - Mirrors the wrapper's `PYTHONPATH` for the import test, then runs the `bin/x-ray` wrapper end-to-end on a minimal PDF
 
 ## Testing Formulas Locally
 
@@ -110,9 +110,9 @@ Five workflows run on PRs and pushes to main:
 
 ## Important Implementation Notes
 
-- The x-ray formula uses `write_env_script` to create a wrapper that sets `PYTHONPATH` to include Homebrew's PyMuPDF installation
+- The x-ray formula uses `write_env_script` to create a wrapper that sets `PYTHONPATH` to the prebuilt `pymupdf`/`mupdf` site-packages
 - Python resources must be updated manually using `just update-x-ray-resources` when dependencies change
-- The formula depends on `python@3.14` specifically (not just any Python 3)
+- The venv is built with `python3.15` and must match the Python that homebrew-core builds `pymupdf`/`mupdf` against; the 2026-10 pymupdf python@3.15 migration broke the old python@3.14 venv (see issue #60)
 - The test recipe copies the formula to the tap directory before installing to test from the working copy
 - All git commands in `.just/gh-process.just` use standard git (no aliases required)
 - PR checks poll every 5 seconds for faster feedback
