@@ -41,17 +41,21 @@ class XRay < Formula
     sha256 "e7d814a81dad81e6caf2ec9fdedb284ecc9c73076b62654547cc64ccdcae26e9"
   end
 
-  # Site-packages of Homebrew's prebuilt pymupdf and mupdf Python bindings.
-  # homebrew-core builds both against python@3.15, so the venv below and these
-  # paths must move together whenever core migrates pymupdf to a newer Python
-  # (see issue #60 for what happened when this linkage was left implicit).
+  # Homebrew's prebuilt pymupdf/mupdf Python bindings are built by
+  # homebrew-core against this Python; the venv below and the PYTHONPATH
+  # paths must move together whenever core migrates pymupdf to a newer
+  # Python (see issue #60 for what happened when this linkage was left
+  # implicit).
+  def pymupdf_python
+    "python3.15"
+  end
+
   def pymupdf_site_packages
-    %w[mupdf pymupdf].map { |name| formula_opt_lib(name)/"python3.15/site-packages" }
+    %w[mupdf pymupdf].map { |name| formula_opt_prefix(name)/Language::Python.site_packages(pymupdf_python) }
   end
 
   def install
-    # Link to Homebrew's pymupdf installation
-    venv = virtualenv_create(libexec, "python3.15")
+    venv = virtualenv_create(libexec, pymupdf_python)
     venv.pip_install resources
     venv.pip_install buildpath
 
@@ -59,7 +63,9 @@ class XRay < Formula
     pymupdf_path = pymupdf_site_packages.join(":")
     (bin/"x-ray").write_env_script libexec/"bin/xray",
                                    PATH:       "#{libexec}/bin:$PATH",
-                                   PYTHONPATH: "#{pymupdf_path}:$PYTHONPATH"
+                                   # ${VAR:+:$VAR} appends only when VAR is set; a bare $VAR
+                                   # would leave an empty entry that Python treats as cwd
+                                   PYTHONPATH: "#{pymupdf_path}${PYTHONPATH:+:$PYTHONPATH}"
   end
 
   test do
@@ -68,7 +74,7 @@ class XRay < Formula
 
     # Mirror the wrapper's PYTHONPATH so fitz resolves the way it does at
     # runtime instead of relying on the venv's implicit Homebrew .pth entries
-    ENV["PYTHONPATH"] = "#{pymupdf_site_packages.join(":")}:#{ENV["PYTHONPATH"]}"
+    ENV["PYTHONPATH"] = [pymupdf_site_packages.join(":"), ENV["PYTHONPATH"]].reject { |p| p.to_s.empty? }.join(":")
 
     # Test Python module can be imported with PyMuPDF support
     system libexec/"bin/python", "-c", "import xray; from fitz import Document"
