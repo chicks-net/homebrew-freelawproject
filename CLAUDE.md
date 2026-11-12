@@ -43,7 +43,7 @@ The x-ray formula is a Python-based Homebrew formula that:
 
 - Depends on `python@3.15`, `pymupdf` and `mupdf` (PyMuPDF for PDF processing)
 - Uses Homebrew's `virtualenv_create` to create an isolated Python environment
-- Installs Python dependencies as `resource` blocks (certifi, charset-normalizer, idna, requests, urllib3)
+- Installs Python dependencies as `resource` blocks, regenerated via `just update-x-ray-resources` (the formula's `pypi_packages` stanza names the PyPI package and the exclusions)
 - Creates a wrapper script at `bin/x-ray` that:
   - Points to the virtualenv's `xray` executable
   - Sets `PYTHONPATH` to the prebuilt `pymupdf`/`mupdf` site-packages for the venv's Python (`python3.15`)
@@ -111,7 +111,7 @@ Five workflows run on PRs and pushes to main:
 ## Important Implementation Notes
 
 - The x-ray formula uses `write_env_script` to create a wrapper that sets `PYTHONPATH` to the prebuilt `pymupdf`/`mupdf` site-packages
-- Python resources must be updated manually using `just update-x-ray-resources` when dependencies change
+- Python resources are regenerated automatically by the Renovate Resources workflow on Renovate version-bump PRs; run `just update-x-ray-resources` for manual updates
 - The venv is built with `python3.15` and must match the Python that homebrew-core builds `pymupdf`/`mupdf` against; the 2026-10 pymupdf python@3.15 migration broke the old python@3.14 venv (see issue #60)
 - The test recipe copies the formula to the tap directory before installing to test from the working copy
 - All git commands in `.just/gh-process.just` use standard git (no aliases required)

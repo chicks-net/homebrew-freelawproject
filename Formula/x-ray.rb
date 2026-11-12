@@ -16,6 +16,18 @@ class XRay < Formula
   depends_on "pymupdf"
   depends_on "python@3.15"
 
+  # Metadata for `brew update-python-resources`, which regenerates the
+  # resource blocks below by resolving this formula by NAME from the
+  # tap (scripts/update-x-ray-resources.sh stages the tap copy; the
+  # Renovate Resources workflow runs it on Renovate version-bump PRs).
+  # PyMuPDF is excluded because the `pymupdf` formula dependency above
+  # provides the fitz bindings instead of a vendored pip resource (see
+  # the pymupdf_python note below). python@3.15 is listed so
+  # --install-dependencies can satisfy the resolver's pip.
+  pypi_packages package_name:     "x-ray",
+                exclude_packages: ["PyMuPDF"],
+                dependencies:     ["python@3.15"]
+
   resource "certifi" do
     url "https://files.pythonhosted.org/packages/b0/ee/9b19140fe824b367c04c5e1b369942dd754c4c5462d5674002f75c4dedc1/certifi-2024.8.30.tar.gz"
     sha256 "bec941d2aa8195e248a60b31ff9f0558284cf01a52591ceda73ea9afffd69fd9"

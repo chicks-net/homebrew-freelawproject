@@ -149,12 +149,13 @@ update_python_resources() {
 		return
 	fi
 
-	# Run brew update-python-resources
-	if brew update-python-resources "$FORMULA_FILE"; then
-		success "Python resources updated"
-	else
-		warning "Failed to update Python resources (you may need to run this manually)"
-	fi
+	# brew update-python-resources resolves formulas by name from the
+	# local tap (file paths fail on current Homebrew), so delegate to
+	# the helper script that stages the formula into the tap, updates
+	# it by name, and syncs the result back here.
+	chmod +x scripts/update-x-ray-resources.sh
+	./scripts/update-x-ray-resources.sh
+	success "Python resources updated"
 }
 
 # Show diff of changes
