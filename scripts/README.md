@@ -57,7 +57,7 @@ The script performs these steps:
 4. **Comparison** - Exits early if formula is already at target version
 5. **Tarball Download** - Downloads tarball from GitHub and pipes to `shasum -a 256`
 6. **Formula Update** - Uses `sed` to update URL and SHA256 in formula file (creates backup first)
-7. **Python Resources** - Runs `brew update-python-resources` to update dependency hashes
+7. **Python Resources** - Runs `scripts/update-x-ray-resources.sh` to refresh Python dependencies
 8. **Diff Display** - Shows `git diff` of changes for review
 
 ### Requirements
@@ -110,16 +110,42 @@ The script is designed to be formula-agnostic where possible, but assumes:
 - SHA256 is on line immediately after URL
 - Formula uses Python virtualenv with resources
 
+## update-x-ray-resources.sh
+
+Regenerates the Python `resource` blocks in `Formula/x-ray.rb` by running
+`brew update-python-resources`.
+
+`brew update-python-resources` resolves its formula argument by **name**
+from the local tap; current Homebrew no longer accepts file paths (they fail
+with `No available formula with the name ...`). The script stages the
+working-tree formula into the tap, runs the update by tap-qualified name
+(`chicks-net/freelawproject/x-ray`), and copies the result back, so it works
+whether or not the tap is a symlink to the checkout.
+
+Package name and exclusions come from the formula's `pypi_packages` stanza
+(PyMuPDF is excluded because the brew `pymupdf` formula provides the fitz
+bindings). The script always passes `--install-dependencies` (so the
+resolver's pip has `python@3.15`) and `--ignore-main-package-cooldown` (so a
+just-released x-ray can be resolved; dependencies still respect the
+cooldown).
+
+Usage:
+
+```bash
+./scripts/update-x-ray-resources.sh
+
+# or via just
+just update-x-ray-resources
+```
+
 ## GitHub Actions Integration
 
-The `update-x-ray.sh` script is called by the `.github/workflows/x-ray-autoupdate.yml` workflow:
-
-- Workflow runs twice daily (6 AM and 6 PM UTC) via cron schedule
-- Can be triggered manually via `workflow_dispatch` with optional version input
-- Creates pull requests automatically when updates are detected
-- Creates GitHub issues if automation fails
-
-The workflow uses the same update logic as the script but duplicates some steps inline for better workflow visibility and control.
+Renovate opens the version-bump PRs (`.github/renovate.json`), and the
+Renovate Resources workflow (`.github/workflows/renovate-resources.yml`)
+regenerates the Python resources on those PRs by running
+`scripts/update-x-ray-resources.sh` and committing any changes to the PR
+branch. `scripts/update-x-ray.sh` remains the manual/local path for
+version bumps.
 
 ## Testing
 

@@ -94,8 +94,11 @@ update-x-ray-resources:
 	#!/usr/bin/env bash
 	set -euxo pipefail
 
+	# Make script executable if not already
+	chmod +x scripts/update-x-ray-resources.sh
+
 	echo "Updating Python resources for x-ray formula..."
-	brew update-python-resources Formula/x-ray.rb
+	./scripts/update-x-ray-resources.sh
 	echo "{{GREEN}}Resources updated! Review Formula/x-ray.rb for changes{{NORMAL}}"
 
 # update x-ray formula to latest version

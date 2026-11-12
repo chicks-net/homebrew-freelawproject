@@ -46,32 +46,19 @@ jobs:
         run: |
           set -euo pipefail
 
-          tap_dir="$(brew --repository)/Library/Taps/chicks-net/homebrew-freelawproject"
+          # `brew update-python-resources` resolves formulas by NAME
+          # from the local tap; passing it a file path fails on current
+          # Homebrew with `No available formula with the name "x-ray"`,
+          # which is how PR #66's resources silently never updated
+          # (the failure was masked by a ::warning and a green check).
+          # The script stages the PR branch's formula into the tap and
+          # updates it by name; any brew failure now fails this job.
+          ./scripts/update-x-ray-resources.sh
 
-          # setup-homebrew symlinks the tap directory to the checkout
-          # workspace when this repository is itself a tap (owner/homebrew-*),
-          # so the workspace already is the tap and copying the formula
-          # there fails with "cp: ... are the same file". Update in place
-          # when the tap is the workspace; only stage a copy when the tap is
-          # a separate directory.
-          if [ "$(readlink -f "$tap_dir")" = "$(readlink -f "$GITHUB_WORKSPACE")" ]; then
-            formula="$GITHUB_WORKSPACE/Formula/x-ray.rb"
-          else
-            mkdir -p "$tap_dir/Formula"
-            cp Formula/x-ray.rb "$tap_dir/Formula/x-ray.rb"
-            formula="$tap_dir/Formula/x-ray.rb"
-          fi
-
-          if brew update-python-resources "$formula"; then
-            # Copy the updated formula back unless it already is the
-            # workspace copy.
-            if [ "$(readlink -f "$formula")" != "$(readlink -f "Formula/x-ray.rb")" ]; then
-              cp "$formula" Formula/x-ray.rb
-            fi
-            echo "updated=true" >> "$GITHUB_OUTPUT"
-          else
+          if git diff --quiet -- Formula/x-ray.rb; then
             echo "updated=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::brew update-python-resources failed"
+          else
+            echo "updated=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Commit and push
