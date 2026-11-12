@@ -20,9 +20,26 @@ jobs:
         with:
           ref: ${{ github.head_ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
 
+      # The token makes setup-homebrew configure git auth globally (http
+      # extraheader). The tap clone it leaves behind has no credentials of
+      # its own, which the "Commit and push" step needs to push with.
       - name: Setup Homebrew
         uses: Homebrew/actions/setup-homebrew@4790763c0a3ba4036f72634dc079c4a7dfcd4878 # 2026.10.19.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # setup-homebrew replaces the checkout with its own clone of GITHUB_SHA
+      # on the default branch, so switch back to the PR branch before
+      # updating so the commit lands on the PR branch.
+      - name: Checkout PR branch
+        env:
+          PR_BRANCH: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          git fetch origin "$PR_BRANCH"
+          git checkout -B "$PR_BRANCH" FETCH_HEAD
 
       - name: Update Python resources
         id: resources
@@ -30,11 +47,27 @@ jobs:
           set -euo pipefail
 
           tap_dir="$(brew --repository)/Library/Taps/chicks-net/homebrew-freelawproject"
-          mkdir -p "$tap_dir/Formula"
-          cp Formula/x-ray.rb "$tap_dir/Formula/x-ray.rb"
 
-          if brew update-python-resources "$tap_dir/Formula/x-ray.rb"; then
-            cp "$tap_dir/Formula/x-ray.rb" Formula/x-ray.rb
+          # setup-homebrew symlinks the tap directory to the checkout
+          # workspace when this repository is itself a tap (owner/homebrew-*),
+          # so the workspace already is the tap and copying the formula
+          # there fails with "cp: ... are the same file". Update in place
+          # when the tap is the workspace; only stage a copy when the tap is
+          # a separate directory.
+          if [ "$(readlink -f "$tap_dir")" = "$(readlink -f "$GITHUB_WORKSPACE")" ]; then
+            formula="$GITHUB_WORKSPACE/Formula/x-ray.rb"
+          else
+            mkdir -p "$tap_dir/Formula"
+            cp Formula/x-ray.rb "$tap_dir/Formula/x-ray.rb"
+            formula="$tap_dir/Formula/x-ray.rb"
+          fi
+
+          if brew update-python-resources "$formula"; then
+            # Copy the updated formula back unless it already is the
+            # workspace copy.
+            if [ "$(readlink -f "$formula")" != "$(readlink -f "Formula/x-ray.rb")" ]; then
+              cp "$formula" Formula/x-ray.rb
+            fi
             echo "updated=true" >> "$GITHUB_OUTPUT"
           else
             echo "updated=false" >> "$GITHUB_OUTPUT"
@@ -43,6 +76,8 @@ jobs:
 
       - name: Commit and push
         if: steps.resources.outputs.updated == 'true'
+        env:
+          PR_BRANCH: ${{ github.head_ref }}
         run: |
           set -euo pipefail
 
@@ -56,4 +91,8 @@ jobs:
 
           git add Formula/x-ray.rb
           git commit -m "chore: update Python resources for Renovate version bump"
-          git push
+
+          # Pushes made with GITHUB_TOKEN do not trigger new workflow runs,
+          # so re-run the Brew Formula workflow manually (or tick Renovate's
+          # rebase box) to test the branch with the updated resources.
+          git push origin "HEAD:$PR_BRANCH"
